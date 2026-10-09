@@ -27,3 +27,27 @@ jobs:
     
     - name: Run tests
       run: npm test
+
+  deploy:
+    name: Deploy to EC2
+    needs: build # This ensures deployment ONLY happens if the tests pass!
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' # Only deploy when pushing to main
+
+    steps:
+    - name: SSH into EC2 and Deploy
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USERNAME }}
+        key: ${{ secrets.EC2_PRIVATE_KEY }}
+        script: |
+          # Change to your repository folder on the server
+          cd ~/nodejsforgithub
+          
+          # Pull the latest code
+          git pull origin main
+          
+          # Rebuild and restart the Docker container
+          docker compose down
+          docker compose up --build -d
